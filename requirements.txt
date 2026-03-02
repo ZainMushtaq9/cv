@@ -1,0 +1,11 @@
+flask
+flask-cors
+gunicorn
+groq
+python-dotenv
+pdfplumber
+python-docx
+pytesseract
+opencv-python-headless
+Pillow
+reportlab

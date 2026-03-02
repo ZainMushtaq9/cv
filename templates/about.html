@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}About | ResumeAI Platform{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto glass rounded-2xl p-10">
+    <h1 class="text-3xl font-bold text-white mb-6"><i class="fas fa-info-circle text-accent mr-2"></i>About ResumeAI
+    </h1>
+    <div class="space-y-4 text-gray-300 text-sm leading-relaxed">
+        <p>ResumeAI is an AI-powered <strong class="text-white">Resume–Job Description Union Analyzer</strong> that
+            helps job seekers optimize their resumes for specific positions.</p>
+        <p>Our system performs a <strong class="text-accent">set-union analysis</strong> between your resume keywords
+            and job description requirements, giving you three critical insights:</p>
+        <ul class="space-y-2 ml-4">
+            <li class="flex items-start gap-2"><span class="text-success font-bold">✅</span> <strong
+                    class="text-white">Matched Keywords:</strong> Skills you already have that the job wants.</li>
+            <li class="flex items-start gap-2"><span class="text-danger font-bold">❌</span> <strong
+                    class="text-white">Missing Keywords:</strong> Gaps you need to fill in your resume.</li>
+            <li class="flex items-start gap-2"><span class="text-info font-bold">➕</span> <strong
+                    class="text-white">Extra Keywords:</strong> Skills in your resume not in the JD — keep or remove.
+            </li>
+        </ul>
+        <p>We use advanced AI models to understand context, semantic equivalences, and Pakistan's education system for
+            accurate scoring.</p>
+        <p class="text-gray-500 text-xs mt-6">Built with ❤️ using Flask, Groq AI, and modern web technologies.</p>
+    </div>
+</div>
+{% endblock %}

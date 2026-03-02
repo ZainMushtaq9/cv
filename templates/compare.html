@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block title %}Compare Jobs | ResumeAI Platform{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+    <div class="text-center mb-8">
+        <h2 class="text-3xl font-bold text-white mb-2">
+            <i class="fas fa-code-compare text-accent mr-2"></i>Multiple Job Comparison
+        </h2>
+        <p class="text-gray-400">Upload your resume once and compare it against multiple job descriptions to find your
+            best fit</p>
+    </div>
+
+    <div class="glass rounded-2xl p-8 glow-accent">
+        <form id="compareForm" class="space-y-6">
+            <!-- Resume -->
+            <div class="glass-light rounded-xl p-6">
+                <h3 class="text-lg font-bold text-accent-light mb-4">
+                    <i class="fas fa-file-upload mr-2"></i>Your Resume
+                </h3>
+                <div class="flex rounded-lg bg-dark-800 p-1 mb-4 max-w-xs">
+                    <button type="button" id="cmpToggleUpload"
+                        class="flex-1 py-2 px-3 text-xs font-semibold rounded-md bg-accent-dark text-white transition">Upload</button>
+                    <button type="button" id="cmpTogglePaste"
+                        class="flex-1 py-2 px-3 text-xs font-semibold rounded-md text-gray-400 hover:text-white transition">Paste</button>
+                </div>
+                <div id="cmpUploadSection">
+                    <input type="file" name="resume" id="cmpResume" class="block w-full text-sm text-gray-400
+                        file:mr-4 file:py-2.5 file:px-5 file:rounded-lg file:border-0
+                        file:text-sm file:font-semibold file:bg-accent-dark file:text-white
+                        hover:file:bg-accent transition cursor-pointer" accept=".pdf,.docx,.txt,.png,.jpg,.jpeg">
+                </div>
+                <div id="cmpPasteSection" class="hidden">
+                    <textarea name="resume_text" rows="4"
+                        class="w-full p-3 bg-dark-800 border border-white/10 rounded-lg text-gray-200 placeholder-gray-500 outline-none text-sm resize-none"
+                        placeholder="Paste your resume text here..."></textarea>
+                </div>
+            </div>
+
+            <!-- JD Inputs -->
+            <div id="jdContainer" class="space-y-4">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-lg font-bold text-accent-light"><i class="fas fa-briefcase mr-2"></i>Job
+                        Descriptions (2–5)</h3>
+                    <button type="button" id="addJdBtn"
+                        class="text-xs bg-accent-dark text-white px-4 py-2 rounded-lg hover:bg-accent transition">
+                        <i class="fas fa-plus mr-1"></i>Add JD
+                    </button>
+                </div>
+                <div class="jd-entry glass-light rounded-xl p-4">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="text-xs font-bold text-accent bg-accent/10 px-2.5 py-1 rounded-full">JD 1</span>
+                        <input type="text" name="jd_label_1"
+                            class="flex-1 bg-dark-800 border border-white/10 rounded-lg p-2 text-sm text-gray-200 placeholder-gray-500 outline-none"
+                            placeholder="Job Title (e.g., Frontend Developer at Company X)" value="">
+                    </div>
+                    <textarea name="jd_text_1" rows="3"
+                        class="w-full p-3 bg-dark-800 border border-white/10 rounded-lg text-gray-200 placeholder-gray-500 outline-none text-sm resize-none"
+                        placeholder="Paste job description #1..."></textarea>
+                </div>
+                <div class="jd-entry glass-light rounded-xl p-4">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="text-xs font-bold text-accent bg-accent/10 px-2.5 py-1 rounded-full">JD 2</span>
+                        <input type="text" name="jd_label_2"
+                            class="flex-1 bg-dark-800 border border-white/10 rounded-lg p-2 text-sm text-gray-200 placeholder-gray-500 outline-none"
+                            placeholder="Job Title (e.g., Backend Engineer at Company Y)" value="">
+                    </div>
+                    <textarea name="jd_text_2" rows="3"
+                        class="w-full p-3 bg-dark-800 border border-white/10 rounded-lg text-gray-200 placeholder-gray-500 outline-none text-sm resize-none"
+                        placeholder="Paste job description #2..."></textarea>
+                </div>
+            </div>
+
+            <div class="text-center mt-6">
+                <button type="submit" id="compareSubmitBtn"
+                    class="group bg-gradient-to-r from-accent-dark to-accent text-white px-10 py-4 rounded-xl font-bold text-lg hover:shadow-xl hover:shadow-accent/20 transition-all duration-300 transform hover:scale-105 w-full sm:w-auto">
+                    <i class="fas fa-scale-balanced mr-2 group-hover:rotate-12 transition-transform"></i>Compare Jobs
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Loading -->
+    <div id="cmpLoader" class="hidden mt-10 text-center glass rounded-2xl p-10">
+        <div class="relative inline-block mb-6">
+            <div class="w-16 h-16 border-4 border-accent/20 rounded-full"></div>
+            <div
+                class="w-16 h-16 border-4 border-accent border-t-transparent rounded-full absolute top-0 left-0 animate-spin">
+            </div>
+        </div>
+        <h3 class="text-xl font-bold text-white mb-2">Comparing Jobs...</h3>
+        <p class="text-gray-400 animate-pulse">Analyzing your resume against multiple job descriptions...</p>
+    </div>
+
+    <!-- Results -->
+    <div id="cmpResults" class="hidden mt-10 space-y-6">
+        <h3 class="text-2xl font-bold text-white flex items-center">
+            <i class="fas fa-trophy text-accent mr-3"></i>Job Comparison Results
+        </h3>
+        <p class="text-gray-400 text-sm">Jobs ranked by match score — your best fit is at the top.</p>
+
+        <div id="cmpCards" class="space-y-4"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let jdCount = 2;
+
+    // Toggle upload/paste
+    document.getElementById('cmpToggleUpload').addEventListener('click', () => {
+        document.getElementById('cmpUploadSection').classList.remove('hidden');
+        document.getElementById('cmpPasteSection').classList.add('hidden');
+        document.getElementById('cmpToggleUpload').classList.add('bg-accent-dark', 'text-white');
+        document.getElementById('cmpToggleUpload').classList.remove('text-gray-400');
+        document.getElementById('cmpTogglePaste').classList.remove('bg-accent-dark', 'text-white');
+        document.getElementById('cmpTogglePaste').classList.add('text-gray-400');
+    });
+    document.getElementById('cmpTogglePaste').addEventListener('click', () => {
+        document.getElementById('cmpPasteSection').classList.remove('hidden');
+        document.getElementById('cmpUploadSection').classList.add('hidden');
+        document.getElementById('cmpTogglePaste').classList.add('bg-accent-dark', 'text-white');
+        document.getElementById('cmpTogglePaste').classList.remove('text-gray-400');
+        document.getElementById('cmpToggleUpload').classList.remove('bg-accent-dark', 'text-white');
+        document.getElementById('cmpToggleUpload').classList.add('text-gray-400');
+    });
+
+    // Add JD
+    document.getElementById('addJdBtn').addEventListener('click', () => {
+        if (jdCount >= 5) { alert('Maximum 5 job descriptions.'); return; }
+        jdCount++;
+        const container = document.getElementById('jdContainer');
+        const div = document.createElement('div');
+        div.className = 'jd-entry glass-light rounded-xl p-4';
+        div.innerHTML = `
+            <div class="flex items-center gap-3 mb-2">
+                <span class="text-xs font-bold text-accent bg-accent/10 px-2.5 py-1 rounded-full">JD ${jdCount}</span>
+                <input type="text" name="jd_label_${jdCount}" class="flex-1 bg-dark-800 border border-white/10 rounded-lg p-2 text-sm text-gray-200 placeholder-gray-500 outline-none" placeholder="Job Title..." value="">
+                <button type="button" class="text-danger text-xs hover:text-red-400" onclick="this.closest('.jd-entry').remove(); jdCount--;">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+            <textarea name="jd_text_${jdCount}" rows="3" class="w-full p-3 bg-dark-800 border border-white/10 rounded-lg text-gray-200 placeholder-gray-500 outline-none text-sm resize-none" placeholder="Paste job description #${jdCount}..."></textarea>`;
+        container.appendChild(div);
+    });
+
+    // Submit
+    document.getElementById('compareForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        document.getElementById('cmpLoader').classList.remove('hidden');
+        document.getElementById('cmpResults').classList.add('hidden');
+        document.getElementById('compareSubmitBtn').disabled = true;
+
+        try {
+            const res = await fetch('/api/analyze/compare', { method: 'POST', body: formData });
+            const result = await res.json();
+            if (res.ok && result.status === 'success') {
+                displayComparison(result.data);
+            } else {
+                alert('Error: ' + (result.message || 'Comparison failed.'));
+            }
+        } catch (err) { console.error(err); alert('Network error.'); }
+        finally {
+            document.getElementById('cmpLoader').classList.add('hidden');
+            document.getElementById('compareSubmitBtn').disabled = false;
+        }
+    });
+
+    function displayComparison(data) {
+        document.getElementById('cmpResults').classList.remove('hidden');
+        const cards = document.getElementById('cmpCards');
+        cards.innerHTML = '';
+
+        data.forEach((job, idx) => {
+            const score = job.match_score || 0;
+            const matched = (job.matched_keywords || []).length;
+            const missing = (job.missing_keywords || []).length;
+            const label = job.jd_label || `Job ${job.jd_index || idx + 1}`;
+
+            let borderColor = 'border-gray-600';
+            let scoreColor = 'text-gray-400';
+            let badgeClass = 'bg-gray-500/20 text-gray-400';
+            if (score >= 90) { borderColor = 'border-success/50'; scoreColor = 'text-success'; badgeClass = 'bg-success/20 text-success'; }
+            else if (score >= 70) { borderColor = 'border-info/50'; scoreColor = 'text-info'; badgeClass = 'bg-info/20 text-info'; }
+            else if (score >= 50) { borderColor = 'border-yellow-500/50'; scoreColor = 'text-yellow-400'; badgeClass = 'bg-yellow-500/20 text-yellow-400'; }
+            else { borderColor = 'border-danger/50'; scoreColor = 'text-danger'; badgeClass = 'bg-danger/20 text-danger'; }
+
+            const isBest = idx === 0;
+            const card = document.createElement('div');
+            card.className = `glass rounded-2xl p-6 border-2 ${borderColor} ${isBest ? 'ring-2 ring-success/30' : ''} transition hover:bg-white/5`;
+            card.innerHTML = `
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl font-black text-gray-500">#${job.rank || idx + 1}</span>
+                        <div>
+                            <h4 class="text-white font-bold">${escHtml(label)}</h4>
+                            ${isBest ? '<span class="text-xs bg-success/20 text-success px-2 py-0.5 rounded-full font-semibold"><i class="fas fa-crown mr-1"></i>Best Match</span>' : ''}
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-3xl font-black ${scoreColor}">${score}%</span>
+                        <div><span class="px-3 py-1 inline-flex text-xs font-bold rounded-full ${badgeClass}">${job.decision || 'N/A'}</span></div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div class="glass-light rounded-lg p-3 text-center">
+                        <div class="text-success font-bold text-lg">${matched}</div>
+                        <div class="text-xs text-gray-400">Matched</div>
+                    </div>
+                    <div class="glass-light rounded-lg p-3 text-center">
+                        <div class="text-danger font-bold text-lg">${missing}</div>
+                        <div class="text-xs text-gray-400">Missing</div>
+                    </div>
+                    <div class="glass-light rounded-lg p-3 text-center">
+                        <div class="text-info font-bold text-lg">${(job.extra_keywords || []).length}</div>
+                        <div class="text-xs text-gray-400">Extra</div>
+                    </div>
+                    <div class="glass-light rounded-lg p-3 text-center">
+                        <div class="text-purple font-bold text-lg">${job.total_jd_keywords || 0}</div>
+                        <div class="text-xs text-gray-400">JD Keywords</div>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <p class="text-xs text-gray-400 italic">${escHtml(job.reasoning || 'No reasoning provided.')}</p>
+                </div>
+                <div class="mt-3 flex flex-wrap gap-1">
+                    ${(job.missing_keywords || []).slice(0, 8).map(k => `<span class="keyword-tag keyword-missing">${escHtml(k)}</span>`).join('')}
+                    ${(job.missing_keywords || []).length > 8 ? `<span class="text-xs text-gray-500 ml-2">+${(job.missing_keywords || []).length - 8} more</span>` : ''}
+                </div>
+            `;
+            cards.appendChild(card);
+        });
+
+        document.getElementById('cmpResults').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function escHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+</script>
+{% endblock %}

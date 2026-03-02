@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}HR Bulk Analyzer | ResumeAI Platform{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <!-- Header -->
+    <div class="text-center mb-8">
+        <h2 class="text-3xl font-bold text-white mb-2">
+            <i class="fas fa-users text-accent mr-2"></i>HR Bulk Resume Evaluation
+        </h2>
+        <p class="text-gray-400">Upload up to 50 resumes and compare them against a single Job Description using union
+            analysis</p>
+    </div>
+
+    <!-- Upload Form -->
+    <div class="glass rounded-2xl p-8 glow-accent">
+        <form id="analyzeForm" class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Resumes Upload -->
+                <div class="glass-light rounded-xl p-6">
+                    <h3 class="text-lg font-bold text-accent-light mb-4">
+                        <i class="fas fa-file-pdf mr-2"></i>Upload Resumes (Batch)
+                    </h3>
+                    <input type="file" name="resumes" id="resumes" class="block w-full text-sm text-gray-400
+                        file:mr-4 file:py-2.5 file:px-5
+                        file:rounded-lg file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-accent-dark file:text-white
+                        hover:file:bg-accent transition cursor-pointer" required accept=".pdf,.docx,.txt" multiple>
+                    <p class="text-xs text-gray-500 mt-3"><i class="fas fa-info-circle mr-1"></i>Max 50 files · PDF,
+                        DOCX, TXT</p>
+                    <div id="fileList"
+                        class="mt-4 text-xs text-gray-400 whitespace-pre-wrap max-h-32 overflow-y-auto glass-light rounded-lg p-3 hidden">
+                    </div>
+                </div>
+
+                <!-- JD Input -->
+                <div class="glass-light rounded-xl p-6">
+                    <h3 class="text-lg font-bold text-accent-light mb-4">
+                        <i class="fas fa-briefcase mr-2"></i>Job Description
+                    </h3>
+                    <textarea name="jd_text" id="jd_text" rows="4"
+                        class="w-full p-3 bg-dark-800 border border-white/10 rounded-lg shadow-sm focus:ring-accent/30 focus:ring-2 focus:border-accent text-gray-200 placeholder-gray-500 outline-none transition resize-none"
+                        placeholder="Paste single Job Description here..."></textarea>
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-3 gap-2">
+                        <span class="text-xs font-semibold text-gray-400">OR upload JD file:</span>
+                        <input type="file" name="jd_file" id="jd_file" class="text-xs text-gray-500"
+                            accept=".pdf,.docx,.txt,.png,.jpg,.jpeg">
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-6">
+                <button type="submit" id="submitBtn"
+                    class="group bg-gradient-to-r from-accent-dark to-accent text-white px-10 py-4 rounded-xl font-bold text-lg hover:shadow-xl hover:shadow-accent/20 transition-all duration-300 transform hover:scale-105 w-full sm:w-auto">
+                    <i class="fas fa-magic mr-2 group-hover:rotate-12 transition-transform"></i>Run Bulk Analysis
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loader" class="hidden mt-10 text-center glass rounded-2xl p-10">
+        <div class="relative inline-block mb-6">
+            <div class="w-16 h-16 border-4 border-accent/20 rounded-full"></div>
+            <div
+                class="w-16 h-16 border-4 border-accent border-t-transparent rounded-full absolute top-0 left-0 animate-spin">
+            </div>
+        </div>
+        <h3 class="text-xl font-bold text-white mb-2">Processing Batch...</h3>
+        <p class="text-gray-400 animate-pulse">This may take up to a minute depending on the number of resumes. Please
+            don't close this window.</p>
+    </div>
+
+    <!-- Results Section -->
+    <div id="resultsArea" class="hidden mt-10">
+        <h3 class="text-2xl font-bold text-white mb-6 flex items-center">
+            <i class="fas fa-trophy text-accent mr-3"></i>Candidate Rankings
+        </h3>
+
+        <div class="glass rounded-2xl overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-white/5">
+                    <thead>
+                        <tr class="bg-gradient-to-r from-accent-dark/50 to-accent/30">
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">
+                                Rank</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">
+                                Candidate</th>
+                            <th class="px-6 py-4 text-center text-xs font-semibold text-white uppercase tracking-wider">
+                                Match Score</th>
+                            <th class="px-6 py-4 text-center text-xs font-semibold text-white uppercase tracking-wider">
+                                Matched</th>
+                            <th class="px-6 py-4 text-center text-xs font-semibold text-white uppercase tracking-wider">
+                                Missing</th>
+                            <th class="px-6 py-4 text-center text-xs font-semibold text-white uppercase tracking-wider">
+                                Decision</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">
+                                Reasoning</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsTableBody" class="divide-y divide-white/5"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // File list preview
+    document.getElementById('resumes').addEventListener('change', function (e) {
+        const files = e.target.files;
+        const list = document.getElementById('fileList');
+        if (files.length > 50) {
+            alert('You selected more than 50 files. Only the first 50 will be processed.');
+        }
+        let txt = '';
+        for (let i = 0; i < Math.min(files.length, 50); i++) {
+            txt += (i + 1) + '. ' + files[i].name + '\n';
+        }
+        list.textContent = txt;
+        list.classList.remove('hidden');
+    });
+
+    document.getElementById('analyzeForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const fileInput = document.getElementById('resumes');
+        if (fileInput.files.length > 50) {
+            alert("Please select a maximum of 50 files.");
+            return;
+        }
+
+        const form = e.target;
+        const formData = new FormData(form);
+
+        document.getElementById('loader').classList.remove('hidden');
+        document.getElementById('resultsArea').classList.add('hidden');
+        document.getElementById('submitBtn').disabled = true;
+        document.getElementById('submitBtn').classList.add('opacity-50');
+
+        try {
+            const response = await fetch('/api/analyze/bulk', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+
+            if (response.ok && result.status === 'success') {
+                displayResults(result.data);
+            } else {
+                alert('Error: ' + (result.message || 'Bulk Analysis failed.'));
+            }
+        } catch (error) {
+            console.error(error);
+            alert('A network error occurred.');
+        } finally {
+            document.getElementById('loader').classList.add('hidden');
+            document.getElementById('submitBtn').disabled = false;
+            document.getElementById('submitBtn').classList.remove('opacity-50');
+        }
+    });
+
+    function displayResults(data) {
+        document.getElementById('resultsArea').classList.remove('hidden');
+        const tbody = document.getElementById('resultsTableBody');
+        tbody.innerHTML = '';
+
+        data.forEach(candidate => {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-white/5 transition';
+
+            // Decision styling
+            let badgeClass = 'bg-gray-500/20 text-gray-400';
+            if (candidate.decision === 'Strong Candidate') badgeClass = 'bg-success/20 text-success';
+            else if (candidate.decision === 'Moderate Fit') badgeClass = 'bg-info/20 text-info';
+            else if (candidate.decision === 'Weak Match') badgeClass = 'bg-yellow-500/20 text-yellow-400';
+            else if (candidate.decision === 'Reject') badgeClass = 'bg-danger/20 text-danger';
+
+            const score = candidate.match_score || 0;
+            const matched = (candidate.matched_keywords || []).length;
+            const missing = (candidate.missing_keywords || []).length;
+            const nameShow = candidate.candidate_name || candidate.filename || 'Unknown';
+
+            // Score color
+            let scoreColor = 'text-accent';
+            if (score >= 90) scoreColor = 'text-success';
+            else if (score >= 70) scoreColor = 'text-info';
+            else if (score >= 50) scoreColor = 'text-yellow-400';
+            else scoreColor = 'text-danger';
+
+            tr.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="text-xl font-black text-gray-500">#${candidate.rank}</span>
+                </td>
+                <td class="px-6 py-4">
+                    <div class="text-sm font-semibold text-white truncate max-w-xs">${nameShow}</div>
+                    <div class="text-xs text-gray-500">${candidate.filename || ''}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-center">
+                    <span class="text-lg font-black ${scoreColor}">${score}%</span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-center">
+                    <span class="text-sm font-semibold text-success">${matched}</span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-center">
+                    <span class="text-sm font-semibold text-danger">${missing}</span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-center">
+                    <span class="px-3 py-1.5 inline-flex text-xs font-bold rounded-full ${badgeClass}">
+                        ${candidate.decision}
+                    </span>
+                </td>
+                <td class="px-6 py-4">
+                    <p class="text-xs text-gray-400 line-clamp-2 max-w-xs">${candidate.reasoning || 'No reasoning provided.'}</p>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById('resultsArea').scrollIntoView({ behavior: 'smooth' });
+    }
+</script>
+{% endblock %}
