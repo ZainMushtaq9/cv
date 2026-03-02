@@ -22,19 +22,26 @@ STEP 2 — DEEP JD READING: Thoroughly read the Job Description. Extract:
 - Every preferred/optional qualification
 - Key phrases, action verbs, and domain terminology the ATS will look for
 
-STEP 3 — UNION KEYWORD ANALYSIS: Perform a set-based keyword/skill comparison:
+STEP 3 — HYBRID ATS ANALYSIS:
+Modern recruitment uses a mix of strict keyword-matching ATS and intelligent semantic AI. You must evaluate the candidate for BOTH systems:
 
-A) MATCHED KEYWORDS (Intersection): Skills, tools, technologies, and key phrases that appear in BOTH the resume AND the job description. Include semantic equivalents (e.g., "Node.js" = "Node", "JS" = "JavaScript"). List every match you find.
+A) SEMANTIC MATCHING (For Intelligent AI & High Score):
+Evaluate the candidate's actual qualifications against the JD. Does their "BS-IT" satisfy "14 years of education"? Yes. Does their "3.51 GPA" satisfy "2nd division"? Yes.
+Calculate the `match_score` (0-100) based on how well the candidate SEMANTICALLY meets the JD's core requirements, skills, and experience. Do not penalize the score for missing exact synonyms if the candidate is clearly qualified. Round to nearest integer.
 
-B) MISSING KEYWORDS (Job-only): Skills, qualifications, tools, technologies, and phrases that the Job Description REQUIRES but are ABSENT from the resume. These are gaps the candidate must address. Only include items EXPLICITLY stated in the JD.
+B) STRICT ATS GAPS (missing_keywords) (For Legacy ATS):
+Identify exact keywords, phrases, or qualifications stated in the JD that are LITERALLY missing from the resume text. Even if the candidate meets the requirement semantically (e.g., they have a 3.51 GPA), if the EXACT requested phrase (e.g., "2nd Division") isn't explicitly written in the resume, list it as a missing keyword.
 
-C) EXTRA KEYWORDS (Resume-only): Skills, tools, technologies, and notable qualifications in the resume that are NOT mentioned in the Job Description. These may or may not be relevant to the job.
+C) MATCHED KEYWORDS:
+List keywords that are explicitly present in both documents.
 
-STEP 4 — SCORING: Calculate the Match Score as:
-  match_score = (number of matched keywords / total unique keywords in JD) * 100
-  Round to nearest integer.
+D) EXTRA KEYWORDS:
+List notable skills/qualifications in the resume that are not in the JD.
 
-STEP 5 — SUGGESTIONS: For each missing keyword, suggest a natural way to incorporate it into the resume. For each extra keyword, advise whether to keep (if relevant to the role/industry) or remove (if it clutters the resume).
+STEP 4 — SUGGESTIONS (`missing_keyword_suggestions`):
+For each missing keyword, give actionable advice on how to add it.
+CRITICAL: If the candidate already meets the requirement semantically (e.g., they have a 3.51 GPA but are missing "2nd division"), explicitly state: "You already exceed this requirement with your [existing qualification], but slightly older strict ATS systems look for exact matches. You MUST explicitly add the phrase '[Missing Keyword]' to your resume to safely bypass them. Example: ..."
+For extra keywords, advise whether to keep (relevant) or remove (clutter).
 
 CRITICAL RULES:
 
